@@ -31,7 +31,7 @@ export default function UserCard({ user }: UserCardProps) {
                     : "text-gray-400 hover:text-red-500"
                 }`}
               >
-                ❤️
+                {user.isFavorite ? "❤️" : "🤍"}
               </button>
             </div>
 
