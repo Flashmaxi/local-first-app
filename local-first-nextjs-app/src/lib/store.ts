@@ -11,9 +11,9 @@ export interface AppState {
 
   isLoading: boolean;
   isOnline: boolean;
+  isManualOffline: boolean;
   error: string | null;
 
-  // Actions
   setAllUsers: (users: User[]) => void;
   setCurrentPage: (page: number) => void;
   setLoading: (loading: boolean) => void;
@@ -24,10 +24,10 @@ export interface AppState {
   loadFromCache: () => Promise<void>;
   goToPage: (page: number) => void;
   updateDisplayUsers: () => void;
+  toggleManualOffline: () => void;
 }
 
 export const useStore = create<AppState>()((set, get) => ({
-  // Initial state
   allUsers: [],
   users: [],
   currentPage: 1,
@@ -35,9 +35,9 @@ export const useStore = create<AppState>()((set, get) => ({
   totalPages: 1,
   isLoading: false,
   isOnline: typeof window !== "undefined" ? navigator.onLine : true,
+  isManualOffline: false,
   error: null,
 
-  // Actions
   setAllUsers: (allUsers) => {
     const totalPages = Math.ceil(allUsers.length / 10);
     set({ allUsers, totalPages });
@@ -48,7 +48,11 @@ export const useStore = create<AppState>()((set, get) => ({
     get().updateDisplayUsers();
   },
   setLoading: (loading) => set({ isLoading: loading }),
-  setOnline: (online) => set({ isOnline: online }),
+  setOnline: (online) => {
+    if (!get().isManualOffline) {
+      set({ isOnline: online });
+    }
+  },
   setError: (error) => set({ error }),
 
   updateDisplayUsers: () => {
@@ -90,10 +94,11 @@ export const useStore = create<AppState>()((set, get) => ({
   },
 
   fetchUsers: async (forceRefresh = false) => {
-    const { isOnline, setLoading, setError, setAllUsers } = get();
+    const { isOnline, setLoading, setError, setAllUsers, loadFromCache } =
+      get();
 
     if (!isOnline) {
-      await get().loadFromCache();
+      await loadFromCache();
       return;
     }
 
@@ -193,16 +198,45 @@ export const useStore = create<AppState>()((set, get) => ({
       setError("Failed to load cached data.");
     }
   },
+
+  toggleManualOffline: () => {
+    const { isManualOffline, loadFromCache, setOnline, setError } = get();
+    const newManualOffline = !isManualOffline;
+
+    if (newManualOffline) {
+      set({ isManualOffline: true });
+      setOnline(false);
+      setError("Simulated offline mode enabled. Showing cached data.");
+      loadFromCache();
+    } else {
+      const actualOnlineStatus =
+        typeof window !== "undefined" ? navigator.onLine : true;
+
+      set({ isManualOffline: false });
+      setOnline(actualOnlineStatus);
+
+      if (actualOnlineStatus) {
+        setError(null);
+        get().fetchUsers();
+      } else {
+        setError("You are offline. Showing cached data.");
+      }
+    }
+  },
 }));
 
 if (typeof window !== "undefined") {
   window.addEventListener("online", () => {
-    useStore.getState().setOnline(true);
-    useStore.getState().setError(null);
+    if (!useStore.getState().isManualOffline) {
+      useStore.getState().setOnline(true);
+      useStore.getState().setError(null);
+    }
   });
 
   window.addEventListener("offline", () => {
-    useStore.getState().setOnline(false);
-    useStore.getState().setError("You are offline. Showing cached data.");
+    if (!useStore.getState().isManualOffline) {
+      useStore.getState().setOnline(false);
+      useStore.getState().setError("You are offline. Showing cached data.");
+    }
   });
 }

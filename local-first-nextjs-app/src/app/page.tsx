@@ -6,9 +6,15 @@ import UserCard from "@/components/UserCard";
 import Pagination from "@/components/Pagination";
 
 export default function Home() {
-  const { users, isLoading, error, fetchUsers } = useStore();
+  const {
+    users,
+    isLoading,
+    error,
+    fetchUsers,
+    isManualOffline,
+    toggleManualOffline,
+  } = useStore();
 
-  // Fetch users on page load
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
@@ -34,10 +40,22 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
-      {/* Modern Header */}
       <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200/60 dark:border-slate-700/60 sticky top-0 z-10">
         <div className="container mx-auto px-6 py-8">
           <div className="text-center relative">
+            <button
+              onClick={toggleManualOffline}
+              className={`absolute right-0 top-0 p-3 rounded-xl transition-colors duration-200 text-sm font-medium ${
+                isManualOffline
+                  ? "bg-red-500 text-white hover:bg-red-600"
+                  : "bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-700"
+              }`}
+            >
+              {isManualOffline
+                ? "Go Online (Simulated)"
+                : "Go Offline (Simulate)"}
+            </button>
+
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl mb-4 shadow-lg shadow-blue-600/25">
               <svg
                 className="w-8 h-8 text-white"
@@ -72,7 +90,6 @@ export default function Home() {
       </div>
 
       <div className="container mx-auto px-6 py-8">
-        {/* Error Message */}
         {error && (
           <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200/60 dark:border-amber-700/30 rounded-xl p-6 mb-8 shadow-sm">
             <div className="flex items-start space-x-4">
@@ -118,7 +135,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* User Grid */}
         {users.length > 0 ? (
           <div className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -127,7 +143,6 @@ export default function Home() {
               ))}
             </div>
 
-            {/* Pagination */}
             <Pagination />
           </div>
         ) : (
