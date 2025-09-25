@@ -1,35 +1,30 @@
 import { useStore } from "@/lib/store";
 
 export default function Pagination() {
-  const { currentPage, setCurrentPage, users, usersPerPage } = useStore();
-
-  const totalPages = Math.ceil(users.length / usersPerPage);
+  const { currentPage, totalPages, usersPerPage, goToPage, isLoading } = useStore();
 
   if (totalPages <= 1) return null;
 
-  const handlePageChange = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
+  const handlePageChange = async (page: number) => {
+    if (page >= 1 && page <= totalPages && !isLoading) {
+      await goToPage(page);
       // Scroll to top when page changes
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
-  const startIndex = (currentPage - 1) * usersPerPage;
-  const endIndex = Math.min(startIndex + usersPerPage, users.length);
-
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mt-8">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="text-sm text-gray-600">
-          Showing {startIndex + 1} to {endIndex} of {users.length} users
+          Page {currentPage} of {totalPages} (showing {usersPerPage} users per page)
         </div>
 
         <div className="flex items-center space-x-2">
           {/* Previous Button */}
           <button
             onClick={() => handlePageChange(currentPage - 1)}
-            disabled={currentPage === 1}
+            disabled={currentPage === 1 || isLoading}
             className="px-3 py-2 rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             ← Previous
@@ -40,7 +35,8 @@ export default function Pagination() {
             <button
               key={page}
               onClick={() => handlePageChange(page)}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              disabled={isLoading}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
                 page === currentPage
                   ? "bg-blue-500 text-white"
                   : "border border-gray-300 text-gray-700 hover:bg-gray-50"
@@ -53,7 +49,7 @@ export default function Pagination() {
           {/* Next Button */}
           <button
             onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
+            disabled={currentPage === totalPages || isLoading}
             className="px-3 py-2 rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next →

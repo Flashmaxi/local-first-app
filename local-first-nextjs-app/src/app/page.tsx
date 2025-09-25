@@ -6,18 +6,12 @@ import UserCard from "@/components/UserCard";
 import Pagination from "@/components/Pagination";
 
 export default function Home() {
-  const { users, currentPage, usersPerPage, isLoading, error, fetchUsers } =
-    useStore();
+  const { users, isLoading, error, fetchUsers } = useStore();
 
   // Fetch users on page load
   useEffect(() => {
     fetchUsers(1);
   }, [fetchUsers]);
-
-  // Calculate pagination
-  const startIndex = (currentPage - 1) * usersPerPage;
-  const endIndex = startIndex + usersPerPage;
-  const currentUsers = users.slice(startIndex, endIndex);
 
   if (isLoading) {
     return (
@@ -55,10 +49,10 @@ export default function Home() {
         )}
 
         {/* User Grid */}
-        {currentUsers.length > 0 ? (
+        {users.length > 0 ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {currentUsers.map((user) => (
+              {users.map((user) => (
                 <UserCard key={user.uuid} user={user} />
               ))}
             </div>

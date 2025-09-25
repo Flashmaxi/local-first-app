@@ -6,6 +6,7 @@ export interface AppState {
 
   currentPage: number;
   usersPerPage: number;
+  totalPages: number;
 
   isLoading: boolean;
   isOnline: boolean;
@@ -14,12 +15,14 @@ export interface AppState {
   // Actions
   setUsers: (users: User[]) => void;
   setCurrentPage: (page: number) => void;
+  setTotalPages: (total: number) => void;
   setLoading: (loading: boolean) => void;
   setOnline: (online: boolean) => void;
   setError: (error: string | null) => void;
   toggleFavorite: (userId: string) => Promise<void>;
   fetchUsers: (page: number, forceRefresh?: boolean) => Promise<void>;
   loadFromCache: () => Promise<void>;
+  goToPage: (page: number) => Promise<void>;
 }
 
 export const useStore = create<AppState>()((set, get) => ({
@@ -27,6 +30,7 @@ export const useStore = create<AppState>()((set, get) => ({
   users: [],
   currentPage: 1,
   usersPerPage: 10,
+  totalPages: 1,
   isLoading: false,
   isOnline: typeof window !== "undefined" ? navigator.onLine : true,
   error: null,
@@ -34,6 +38,7 @@ export const useStore = create<AppState>()((set, get) => ({
   // Actions
   setUsers: (users) => set({ users }),
   setCurrentPage: (page) => set({ currentPage: page }),
+  setTotalPages: (total) => set({ totalPages: total }),
   setLoading: (loading) => set({ isLoading: loading }),
   setOnline: (online) => set({ isOnline: online }),
   setError: (error) => set({ error }),
@@ -87,7 +92,7 @@ export const useStore = create<AppState>()((set, get) => ({
 
     try {
       const response = await fetch(
-        `https://randomuser.me/api/?page=${page}&results=50`
+        `https://randomuser.me/api/?page=${page}&results=10`
       );
 
       if (!response.ok) {
@@ -95,6 +100,23 @@ export const useStore = create<AppState>()((set, get) => ({
       }
 
       const data = await response.json();
+
+      // Get existing favorites from IndexedDB to preserve them
+      let existingFavorites: { [uuid: string]: boolean } = {};
+      if (typeof window !== "undefined" && db) {
+        try {
+          const cachedUsers = await db.users.toArray();
+          existingFavorites = cachedUsers.reduce((acc, user) => {
+            if (user.isFavorite) {
+              acc[user.uuid] = true;
+            }
+            return acc;
+          }, {} as { [uuid: string]: boolean });
+        } catch (error) {
+          console.error("Error loading existing favorites:", error);
+        }
+      }
+
       const users: User[] = data.results.map((user: any) => ({
         uuid: user.login.uuid,
         name: user.name,
@@ -105,7 +127,7 @@ export const useStore = create<AppState>()((set, get) => ({
           city: user.location.city,
           country: user.location.country,
         },
-        isFavorite: false,
+        isFavorite: existingFavorites[user.login.uuid] || false,
         cachedAt: new Date(),
       }));
 
@@ -130,7 +152,7 @@ export const useStore = create<AppState>()((set, get) => ({
         }
       }
 
-      setUsers(users);
+      set({ users, currentPage: page, totalPages: Math.max(5, get().totalPages) });
     } catch (error) {
       console.error("Error fetching users:", error);
       setError("Failed to fetch users. Loading from cache...");
@@ -159,6 +181,13 @@ export const useStore = create<AppState>()((set, get) => ({
     } catch (error) {
       console.error("Error loading from cache:", error);
       setError("Failed to load cached data.");
+    }
+  },
+
+  goToPage: async (page: number) => {
+    const { currentPage, totalPages, fetchUsers } = get();
+    if (page >= 1 && page <= totalPages && page !== currentPage) {
+      await fetchUsers(page, true);
     }
   },
 }));
