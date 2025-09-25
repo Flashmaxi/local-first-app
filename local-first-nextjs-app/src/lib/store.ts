@@ -87,7 +87,7 @@ export const useStore = create<AppState>()((set, get) => ({
 
     try {
       const response = await fetch(
-        `https://randomuser.me/api/?page=${page}&results=10`
+        `https://randomuser.me/api/?page=${page}&results=50`
       );
 
       if (!response.ok) {
