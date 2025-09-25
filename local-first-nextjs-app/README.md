@@ -76,6 +76,15 @@ npm run test:watch # Run tests in watch mode
 4. Reopen and navigate to the app
 5. Your favorites should persist and cached data should load
 
+### Method 4: In-App Toggle (Development Only)
+
+This method directly triggers the application's fallback logic using the Zustand state manager.
+
+1.  Look for the **"Go Offline (Simulate)"** button/toggle, usually located in the header area.
+2.  Click the button to manually set the application state to offline.
+3.  The app will immediately call the `loadFromCache` logic and display the cached data along with an offline error message.
+4.  Clicking it again will attempt to reconnect and fetch fresh data if the actual browser is online.
+
 ## Project Structure
 
 ```
